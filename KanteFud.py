@@ -1,21 +1,50 @@
-import sys
+import os
 import zlib
 import random
 import string
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives import padding
+from cryptography.hazmat.primitives.asymmetric import rsa, padding as rsa_padding
+from cryptography.hazmat.primitives import hashes, padding
 from PyQt5 import QtWidgets, QtGui, QtCore
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QPushButton, QFileDialog
 import webbrowser
-import os
 
-def random_string(length):
-    characters = string.ascii_letters + string.digits
-    first_character = random.choice(string.ascii_letters)
-    remaining_characters = ''.join(random.choice(characters) for i in range(length - 1))
-    return first_character + remaining_characters
+# Dinamik olarak anahtar üret
+def generate_rsa_key_pair():
+    private_key = rsa.generate_private_key(
+        public_exponent=65537,
+        key_size=2048,
+        backend=default_backend()
+    )
+    public_key = private_key.public_key()
+    return private_key, public_key
 
+# RSA ile AES anahtarını şifrele
+def rsa_encrypt_key(aes_key, public_key):
+    encrypted_key = public_key.encrypt(
+        aes_key,
+        rsa_padding.OAEP(
+            mgf=rsa_padding.MGF1(algorithm=hashes.SHA256()),
+            algorithm=hashes.SHA256(),
+            label=None
+        )
+    )
+    return encrypted_key
+
+# RSA ile şifrelenmiş anahtarı çöz
+def rsa_decrypt_key(encrypted_key, private_key):
+    decrypted_key = private_key.decrypt(
+        encrypted_key,
+        rsa_padding.OAEP(
+            mgf=rsa_padding.MGF1(algorithm=hashes.SHA256()),
+            algorithm=hashes.SHA256(),
+            label=None
+        )
+    )
+    return decrypted_key
+
+# AES ile şifreleme
 def aes_encrypt(plaintext, key, iv):
     padder = padding.PKCS7(algorithms.AES.block_size).padder()
     padded_data = padder.update(plaintext.encode()) + padder.finalize()
@@ -25,6 +54,7 @@ def aes_encrypt(plaintext, key, iv):
     encrypted = encryptor.update(padded_data) + encryptor.finalize()
     return encrypted
 
+# AES ile şifre çözme
 def aes_decrypt(ciphertext, key, iv):
     cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
     decryptor = cipher.decryptor()
@@ -34,6 +64,7 @@ def aes_decrypt(ciphertext, key, iv):
     decrypted = unpadder.update(decrypted_padded) + unpadder.finalize()
     return decrypted.decode()
 
+# GUI uygulaması
 class AnnenMayKantereitApp(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
@@ -89,8 +120,11 @@ class AnnenMayKantereitApp(QtWidgets.QMainWindow):
             if line.strip().startswith('import') or line.strip().startswith('from'):
                 import_lines.append(line)
 
-        key = os.urandom(32)  
-        iv = os.urandom(16)  
+        key = os.urandom(32)  # AES anahtarı
+        iv = os.urandom(16)  # Başlangıç vektörü
+
+        private_key, public_key = generate_rsa_key_pair()  # RSA anahtar çiftini üret
+        encrypted_key = rsa_encrypt_key(key, public_key)  # AES anahtarını RSA ile şifrele
 
         compressed_code = zlib.compress(original_code.encode())
         encrypted_code = aes_encrypt(compressed_code.decode('latin1'), key, iv)
@@ -100,7 +134,19 @@ import zlib
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives import padding
-import os
+from cryptography.hazmat.primitives.asymmetric import rsa, padding as rsa_padding
+from cryptography.hazmat.primitives import hashes
+
+def rsa_decrypt_key(encrypted_key, private_key):
+    decrypted_key = private_key.decrypt(
+        encrypted_key,
+        rsa_padding.OAEP(
+            mgf=rsa_padding.MGF1(algorithm=hashes.SHA256()),
+            algorithm=hashes.SHA256(),
+            label=None
+        )
+    )
+    return decrypted_key
 
 def aes_decrypt(ciphertext, key, iv):
     cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
@@ -111,27 +157,27 @@ def aes_decrypt(ciphertext, key, iv):
     decrypted = unpadder.update(decrypted_padded) + unpadder.finalize()
     return decrypted.decode()
 
-{imports}
+private_key = ... # RSA özel anahtarı
+encrypted_key = {encrypted_key}
 
-encrypted_code = {encrypted}
-key = {key}
+key = rsa_decrypt_key(encrypted_key, private_key)
 iv = {iv}
 
 compressed_code = aes_decrypt(encrypted_code, key, iv)
 original_code = zlib.decompress(compressed_code.encode('latin1')).decode()
 exec(original_code)
-'''.format(imports='\n'.join(import_lines), encrypted=repr(encrypted_code), key=repr(key), iv=repr(iv))
+'''.format(encrypted_key=repr(encrypted_key), iv=repr(iv))
 
         with open("obfuscated_code.py", "w") as f:
             f.write(decode_function)
 
-        self.result_label.setText("Code encrypted with AES and saved as 'obfuscated_code.py'.")
+        self.result_label.setText("Code encrypted with RSA-AES and saved as 'obfuscated_code.py'.")
 
     def open_documentation(self):
         webbrowser.open("https://learn.microsoft.com/en-us/dotnet/framework/tools/signtool-exe")
 
 if __name__ == '__main__':
-    app = QtWidgets.QApplication(sys.argv)
+    app = QtWidgets.QApplication([])
     window = AnnenMayKantereitApp()
     window.show()
-    sys.exit(app.exec_())
+    app.exec_()
