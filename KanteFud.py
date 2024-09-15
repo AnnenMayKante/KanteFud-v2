@@ -10,7 +10,7 @@ from PyQt5 import QtWidgets, QtGui, QtCore
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QPushButton, QFileDialog
 import webbrowser
 
-# Dinamik olarak anahtar üret
+
 def generate_rsa_key_pair():
     private_key = rsa.generate_private_key(
         public_exponent=65537,
@@ -20,7 +20,7 @@ def generate_rsa_key_pair():
     public_key = private_key.public_key()
     return private_key, public_key
 
-# RSA ile AES anahtarını şifrele
+
 def rsa_encrypt_key(aes_key, public_key):
     encrypted_key = public_key.encrypt(
         aes_key,
@@ -32,7 +32,7 @@ def rsa_encrypt_key(aes_key, public_key):
     )
     return encrypted_key
 
-# RSA ile şifrelenmiş anahtarı çöz
+
 def rsa_decrypt_key(encrypted_key, private_key):
     decrypted_key = private_key.decrypt(
         encrypted_key,
@@ -44,7 +44,7 @@ def rsa_decrypt_key(encrypted_key, private_key):
     )
     return decrypted_key
 
-# AES ile şifreleme
+
 def aes_encrypt(plaintext, key, iv):
     padder = padding.PKCS7(algorithms.AES.block_size).padder()
     padded_data = padder.update(plaintext.encode()) + padder.finalize()
@@ -54,7 +54,7 @@ def aes_encrypt(plaintext, key, iv):
     encrypted = encryptor.update(padded_data) + encryptor.finalize()
     return encrypted
 
-# AES ile şifre çözme
+
 def aes_decrypt(ciphertext, key, iv):
     cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
     decryptor = cipher.decryptor()
@@ -64,7 +64,7 @@ def aes_decrypt(ciphertext, key, iv):
     decrypted = unpadder.update(decrypted_padded) + unpadder.finalize()
     return decrypted.decode()
 
-# GUI uygulaması
+
 class AnnenMayKantereitApp(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
@@ -120,11 +120,11 @@ class AnnenMayKantereitApp(QtWidgets.QMainWindow):
             if line.strip().startswith('import') or line.strip().startswith('from'):
                 import_lines.append(line)
 
-        key = os.urandom(32)  # AES anahtarı
-        iv = os.urandom(16)  # Başlangıç vektörü
+        key = os.urandom(32)  
+        iv = os.urandom(16)  
 
-        private_key, public_key = generate_rsa_key_pair()  # RSA anahtar çiftini üret
-        encrypted_key = rsa_encrypt_key(key, public_key)  # AES anahtarını RSA ile şifrele
+        private_key, public_key = generate_rsa_key_pair()  
+        encrypted_key = rsa_encrypt_key(key, public_key)  
 
         compressed_code = zlib.compress(original_code.encode())
         encrypted_code = aes_encrypt(compressed_code.decode('latin1'), key, iv)
