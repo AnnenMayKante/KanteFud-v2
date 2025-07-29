@@ -4,9 +4,9 @@ import zlib
 import random
 import string
 import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
+from tkinter import filedialog, messagebox
 import webbrowser
-from urllib.parse import quote
+import os
 
 def random_string(length):
     characters = string.ascii_letters + string.digits
@@ -17,27 +17,31 @@ def random_string(length):
 class AnnenMayKantereitApp(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("AnnenMayKantereit v1.5")
+        self.title("AnnenMayKantereit v2")
         self.geometry("800x600")
-        self.configure(bg="#000000")  # Siyah arka plan
+        self.configure(bg="#000000")
 
-        self.logo = tk.PhotoImage(file="AnnenMayKante.png")
-        self.logo_label = tk.Label(self, image=self.logo, bg="#000000")  # Arka plan rengiyle uyumlu
-        self.logo_label.pack(pady=10)
+        try:
+            self.logo = tk.PhotoImage(file="AnnenMayKante.png")
+            self.logo_label = tk.Label(self, image=self.logo, bg="#000000")
+            self.logo_label.pack(pady=10)
+        except Exception:
+            self.logo_label = tk.Label(self, text="[Logo yüklenemedi]", fg="#FF0000", bg="#000000", font=("Arial", 14))
+            self.logo_label.pack(pady=10)
 
         self.file_button = tk.Button(self, text="Python Dosyası Seç", command=self.select_file,
-                                      bg="#c4151c", fg="#FFFFFF", font=("Arial", 12, "bold"),
-                                      relief=tk.RAISED, bd=2)
+                                     bg="#c4151c", fg="#FFFFFF", font=("Arial", 12, "bold"), relief=tk.RAISED, bd=2)
         self.file_button.pack(pady=10)
 
         self.result_label = tk.Label(self, text="", bg="#000000", fg="#FFFFFF", font=("Arial", 12))
         self.result_label.pack(pady=10)
 
-        self.message_label = tk.Label(self, text="Created by AnnenMayKantereit", bg="#000000", fg="#FFFFFF", font=("Arial", 12))
+        self.message_label = tk.Label(self, text="Created by AnnenMayKantereit", bg="#000000",
+                                      fg="#FFFFFF", font=("Arial", 12))
         self.message_label.pack(pady=10)
 
     def select_file(self):
-        file_path = filedialog.askopenfilename(title="Python Dosyası Seç", filetypes=(("Python Dosyaları", "*.py"),))
+        file_path = filedialog.askopenfilename(title="Python Dosyası Seç", filetypes=[("Python Dosyaları", "*.py")])
         if file_path:
             self.encrypt(file_path)
 
@@ -46,39 +50,32 @@ class AnnenMayKantereitApp(tk.Tk):
             with open(file_path, "r", encoding='utf-8') as f:
                 original_code = f.read()
 
-            import_lines = []
-            for line in original_code.split('\n'):
-                if line.strip().startswith('import') or line.strip().startswith('from'):
-                    import_lines.append(line)
+            compressed = zlib.compress(original_code.encode())
+            encoded = base64.b64encode(compressed).decode()
 
-            compressed_code = zlib.compress(original_code.encode())
-            encoded_code = base64.b64encode(compressed_code).decode()
+            var_encoded = random_string(8)
+            var_compressed = random_string(8)
+            var_decoded = random_string(8)
 
-            decode_function = '''
+            loader_code = f"""
 import base64
 import zlib
 
-{imports}
-encoded_code = "{encoded_code}"
-compressed_code = base64.b64decode(encoded_code)
-original_code = zlib.decompress(compressed_code).decode()
-exec(original_code)
-'''.format(imports='\n'.join(import_lines), encoded_code=encoded_code)
+{var_encoded} = "{encoded}"
+{var_compressed} = base64.b64decode({var_encoded})
+{var_decoded} = zlib.decompress({var_compressed}).decode()
+exec({var_decoded})
+"""
 
-            obfuscated_code = decode_function.replace('encoded_code', random_string(10)).replace('compressed_code', random_string(10)).replace('original_code', random_string(10))
+            original_name = os.path.splitext(os.path.basename(file_path))[0]
+            output_file = f"obfuscated_{original_name}_{random_string(5)}.py"
 
-            with open("obfuscated_code.py", "w", encoding='utf-8') as f:
-                f.write(obfuscated_code)
+            with open(output_file, "w", encoding='utf-8') as f:
+                f.write(loader_code.strip())
 
-            self.result_label.config(text="Kod obfuscate edildi ve 'obfuscated_code.py' olarak kaydedildi.")
-        except UnicodeDecodeError as e:
-            self.result_label.config(text=f"Hata: {str(e)}")
+            self.result_label.config(text=f"✅ Obfuscation başarılı: {output_file}")
         except Exception as e:
-            self.result_label.config(text=f"Bir hata oluştu: {str(e)}")
-
-    def open_documentation(self):
-        documentation_url = "https://example.com/SignTool_Documentation"
-        webbrowser.open(documentation_url)
+            self.result_label.config(text=f"❌ Hata: {str(e)}")
 
 if __name__ == '__main__':
     app = AnnenMayKantereitApp()
