@@ -2,7 +2,7 @@
 
 
 KanteFud is a crypter tool that encrypts your Python Files. With this tool, you can make your infected files look like they are not infected. You can encrypt your files with KanteFud.
-(KanteFud Python dosyalarınızı şifreleyen bir şifreleme aracıdır. Bu araç ile virüslü dosyalarınızın virüslü değilmiş gibi görünmesini sağlayabilirsiniz. KanteFud ile dosyalarınızı şifreleyebilirsiniz.)
+(KanteFud Python dosyalarınızı şifreleyen bir şifreleme aracıdır. Bu araç ile virüslü dosyalarınızın virüslü değilmiş gibi görünmesini sağlayabilirsiniz. KanteFud ile dosyalarınızı şifreleyebilirsiniz)
 
 ## Features (Özellikler)
 
